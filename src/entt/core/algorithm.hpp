@@ -103,14 +103,14 @@ struct radix_sort {
             static constexpr auto buckets = 1 << Bit;
             static constexpr auto passes = N / Bit;
 
-            using size_type = typename std::iterator_traits<It>::value_type;
-            std::vector<size_type> aux(std::distance(first, last));
+            using value_type = typename std::iterator_traits<It>::value_type;
+            std::vector<value_type> aux(std::distance(first, last));
 
             auto part = [getter = std::move(getter)](auto from, auto to, auto out, auto start) {
-                int index[buckets]{};
-                int count[buckets]{};
+                std::size_t index[buckets]{};
+                std::size_t count[buckets]{};
 
-                std::for_each(from, to, [&getter, &count, start](const auto &item) {
+                std::for_each(from, to, [&getter, &count, start](const value_type &item) {
                     ++count[(getter(item) >> start) & mask];
                 });
 
@@ -118,7 +118,7 @@ struct radix_sort {
                     item = *(index++) + *(count++);
                 });
 
-                std::for_each(from, to, [&getter, &out, &index, start](const auto &item) {
+                std::for_each(from, to, [&getter, &out, &index, start](const value_type &item) {
                     out[index[(getter(item) >> start) & mask]++] = std::move(item);
                 });
             };
