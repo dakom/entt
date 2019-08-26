@@ -2,9 +2,10 @@
 #define ENTT_CORE_ALGORITHM_HPP
 
 
-#include <functional>
-#include <algorithm>
 #include <utility>
+#include <iterator>
+#include <algorithm>
+#include <functional>
 #include "utility.hpp"
 
 
@@ -76,35 +77,10 @@ struct insertion_sort {
  * @tparam Bit Number of bits processed per pass.
  * @tparam N Maximum number of bits to sort.
  */
-template<std::size_t Pass, std::size_t N>
-class radix_sort {
-    static_assert((N % Pass) == 0);
+template<std::size_t Bit, std::size_t N>
+struct radix_sort {
+    static_assert((N % Bit) == 0);
 
-    template<typename In, typename Out, typename Getter>
-    void sort(In first, In last, Out out_begin, Getter getter = Getter{}, uint32_t pass = 0) const {
-        uint32_t start_bit = pass * Pass;
-
-        constexpr int n_buckets = 1 << Pass;
-        int bucket_count[n_buckets] = {0};
-        constexpr int bit_mask = (1 << Pass) - 1;
-
-        for(auto it = first; it < last; ++it) {
-            int bucket = (getter(*it) >> start_bit) & bit_mask;
-            ++bucket_count[bucket];
-        }
-
-        int out_index[n_buckets];
-        out_index[0] = 0;
-        for (int i = 1; i < n_buckets; ++i)
-            out_index[i] = out_index[i - 1] + bucket_count[i - 1];
-
-        for(auto it = first; it < last; ++it) {
-            int bucket = (getter(*it) >> start_bit) & bit_mask;
-            out_begin[out_index[bucket]++] = *it;
-        }
-    }
-
-public:
     /**
      * @brief Sorts the elements in a range.
      *
@@ -123,27 +99,43 @@ public:
     template<typename It, typename Getter = identity>
     void operator()(It first, It last, Getter getter = Getter{}) const {
         if(first < last) {
+            static constexpr auto mask = (1 << Bit) - 1;
+            static constexpr auto buckets = 1 << Bit;
+            static constexpr auto passes = N / Bit;
+
             using size_type = typename std::iterator_traits<It>::value_type;
             std::vector<size_type> aux(std::distance(first, last));
-            constexpr uint32_t n_passes = N / Pass;
 
-            for (size_t pass = 0; pass < n_passes; ++pass) {
-                if (!(pass & 1)) {
-                    sort(first, last, aux.begin(), getter, pass);
+            auto part = [getter = std::move(getter)](auto from, auto to, auto out, auto start) {
+                int index[buckets]{};
+                int count[buckets]{};
+
+                std::for_each(from, to, [&getter, &count, start](const auto &item) {
+                    ++count[(getter(item) >> start) & mask];
+                });
+
+                std::for_each(std::next(std::begin(index)), std::end(index), [index = std::begin(index), count = std::begin(count)](auto &item) mutable {
+                    item = *(index++) + *(count++);
+                });
+
+                std::for_each(from, to, [&getter, &out, &index, start](const auto &item) {
+                    out[index[(getter(item) >> start) & mask]++] = std::move(item);
+                });
+            };
+
+            for(std::size_t pass = 0; pass < passes; ++pass) {
+                const auto start = pass * Bit;
+
+                if(pass & 1) {
+                    part(aux.begin(), aux.end(), first, start);
                 } else {
-                    sort(aux.begin(), aux.end(), first, getter, pass);
+                    part(first, last, aux.begin(), start);
                 }
             }
 
-            // Move final result from _aux_ vector, if needed
-            if constexpr (n_passes & 1) {
-                auto it = first;
-
-                for(auto &v : aux) {
-                    *(it++) = std::move(v);
-                }
+            if constexpr(passes & 1) {
+                std::move(aux.begin(), aux.end(), first);
             }
-
         }
     }
 };
