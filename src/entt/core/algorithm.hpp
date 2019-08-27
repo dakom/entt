@@ -118,22 +118,18 @@ struct radix_sort {
                     item = *(index++) + *(count++);
                 });
 
-                std::for_each(from, to, [&getter, &out, &index, start](const value_type &item) {
+                std::for_each(from, to, [&getter, &out, &index, start](value_type &item) {
                     out[index[(getter(item) >> start) & mask]++] = std::move(item);
                 });
             };
 
-            for(std::size_t pass = 0; pass < passes; ++pass) {
-                const auto start = pass * Bit;
-
-                if(pass & 1) {
-                    part(aux.begin(), aux.end(), first, start);
-                } else {
-                    part(first, last, aux.begin(), start);
-                }
+            for(std::size_t pass = 0; pass < (passes & ~1); pass += 2) {
+                part(first, last, aux.begin(), pass * Bit);
+                part(aux.begin(), aux.end(), first, (pass + 1) * Bit);
             }
 
             if constexpr(passes & 1) {
+                part(first, last, aux.begin(), (passes - 1) * Bit);
                 std::move(aux.begin(), aux.end(), first);
             }
         }
