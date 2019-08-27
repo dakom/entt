@@ -508,6 +508,8 @@ public:
      * either `data` or `raw` gives no guarantees on the order, even though
      * `sort` has been invoked.
      *
+     * TODO
+     *
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
      * @tparam Args Types of arguments to forward to the sort function object.
@@ -525,8 +527,8 @@ public:
         const auto offset = std::distance(last, end());
         std::iota(copy.begin(), copy.end(), size_type{});
 
-        algo(copy.rbegin(), copy.rend(), [this, offset, compare = std::move(compare)](const auto lhs, const auto rhs) {
-            return compare(std::as_const(direct[lhs+offset]), std::as_const(direct[rhs+offset]));
+        algo(copy.rbegin(), copy.rend(), [this, offset, compare = std::move(compare)](const auto... index) {
+            return compare(std::as_const(direct[index+offset])...);
         }, std::forward<Args>(args)...);
 
         for(size_type pos{}, length = copy.size(); pos < length; ++pos) {

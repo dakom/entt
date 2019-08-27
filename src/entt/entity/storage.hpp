@@ -452,6 +452,8 @@ public:
      * either `data` or `raw` gives no guarantees on the order, even though
      * `sort` has been invoked.
      *
+     * TODO
+     *
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
      * @tparam Args Types of arguments to forward to the sort function object.
@@ -468,15 +470,13 @@ public:
         const auto from = underlying_type::begin() + std::distance(begin(), first);
         const auto to = from + std::distance(first, last);
 
-        if constexpr(std::is_invocable_v<Compare, const object_type &, const object_type &>) {
-            static_assert(!std::is_empty_v<object_type>);
-
-            underlying_type::sort(from, to, [this, compare = std::move(compare)](const auto lhs, const auto rhs) {
-                return compare(std::as_const(instances[underlying_type::index(lhs)]), std::as_const(instances[underlying_type::index(rhs)]));
-            }, std::move(algo), std::forward<Args>(args)...);
-        } else {
-            underlying_type::sort(from, to, std::move(compare), std::move(algo), std::forward<Args>(args)...);
-        }
+        underlying_type::sort(from, to, [this, compare = std::move(compare)](const auto... entity) {
+            if constexpr(std::is_invocable_v<Compare, decltype(entity, instances[{}])...>) {
+                return compare(std::as_const(instances[underlying_type::index(entity)])...);
+            } else {
+                return void(this), compare(entity...);
+            }
+        }, std::move(algo), std::forward<Args>(args)...);
     }
 
     /*! @brief Resets a storage. */

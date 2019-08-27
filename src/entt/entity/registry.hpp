@@ -1059,6 +1059,8 @@ public:
      * sorted by this function. Use the `sort` member function of a group to
      * sort the other half of the pool.
      *
+     * TODO
+     *
      * @tparam Component Type of components to sort.
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
