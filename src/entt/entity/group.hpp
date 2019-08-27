@@ -390,6 +390,8 @@ public:
      * either `data` or `raw` gives no guarantees on the order, even though
      * `sort` has been invoked.
      *
+     * TODO
+     *
      * @tparam Component Optional types of components to compare.
      * @tparam Compare Type of comparison function object.
      * @tparam Sort Type of sort function object.
@@ -815,6 +817,8 @@ public:
      * Attempting to iterate elements using a raw pointer returned by a call to
      * either `data` or `raw` gives no guarantees on the order, even though
      * `sort` has been invoked.
+     *
+     * TODO
      *
      * @tparam Component Optional types of components to compare.
      * @tparam Compare Type of comparison function object.
